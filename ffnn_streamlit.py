@@ -1,13 +1,15 @@
 import streamlit as st
-from keras.layers import *
-import keras
+#from keras.layers import *
+#import keras
 import tensorflow as tf
+from tensorflow.keras.layers import *
+from tensorflow import keras
 import numpy as np
 import matplotlib.pyplot as plt
 from sklearn.model_selection import train_test_split, GridSearchCV
 import time as tt
-import io
-from contextlib import redirect_stdout
+#import io
+#from contextlib import redirect_stdout
 import pandas as pd
 from scikeras.wrappers import KerasClassifier
 
