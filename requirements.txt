@@ -2,3 +2,5 @@ tensorflow ;python_version < "3.12"
 keras
 scikit-learn 
 scikeras
+pandas
+matplotlib
