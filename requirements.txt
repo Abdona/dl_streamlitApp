@@ -1,0 +1,6 @@
+keras
+tesorlow
+scikit-learn
+scikeras
+numpy
+pandas
