@@ -1,4 +1,4 @@
-tesorlow
+tensorflow
 scikit-learn
 scikeras
 numpy
