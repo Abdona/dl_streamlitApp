@@ -322,7 +322,6 @@ with tab2:
         
         model_hyper_tuning = GridSearchCV(KerasClassifier(model = get_clf, loss = 'sparse_categorical_crossentropy'), hyper_parameters,error_score='raise')
 
-        st.write(model_hyper_tuning)
         if st.button('Start'):
             model_hyper_tuning.fit(x_train,y_train)
             st.session_state['model_hyper_tuning'] = model_hyper_tuning
