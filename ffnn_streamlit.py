@@ -327,5 +327,5 @@ with tab2:
             model_hyper_tuning.fit(x_train,y_train)
             st.session_state['model_hyper_tuning'] = model_hyper_tuning
 
-        st.write(st.session_state['model_hyper_tuning'].best_score_)
+            st.write(st.session_state['model_hyper_tuning'].best_score_)
 
