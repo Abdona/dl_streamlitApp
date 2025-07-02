@@ -1,5 +1,4 @@
-tensorflow
-scikit-learn
-scikeras
-numpy
-pandas
+keras = 3.10
+tensorflow = 2.16.2
+scikit-learn = 1.7.0
+scikeras = 0.13.0
