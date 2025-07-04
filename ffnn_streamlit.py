@@ -320,7 +320,7 @@ with tab2:
         
         KerasClassifier(model = get_clf, loss = 'sparse_categorical_crossentropy')
         
-        model_hyper_tuning = GridSearchCV(KerasClassifier(model = get_clf, loss = 'sparse_categorical_crossentropy'), hyper_parameters,error_score='raise')
+        model_hyper_tuning = GridSearchCV(KerasClassifier(model = get_clf, loss = 'sparse_categorical_crossentropy'),cv=2, hyper_parameters,error_score='raise')
 
         if st.button('Start'):
             model_hyper_tuning.fit(x_train,y_train)
