@@ -6,7 +6,7 @@ from tensorflow.keras.layers import *
 from tensorflow import keras
 import numpy as np
 import matplotlib.pyplot as plt
-from sklearn.model_selection import train_test_split, GridSearchCV
+from sklearn.model_selection import train_test_split, RandomizedSearchCV
 import time as tt
 #import io
 #from contextlib import redirect_stdout
@@ -38,7 +38,7 @@ class StreamlitCallback(keras.callbacks.Callback):
         st.text("Training completed! ✅")
         self.progress_bar.progress(1.0)
 
-tab1, tab2, tab3 = st.tabs(['Plot Data','Train', 'Predict'])
+tab1, tab2 = st.tabs(['Plot Data', 'Train'])#, tab3 = st.tabs(['Plot Data','Train', 'Predict'])
 (x_train, y_train), (x_test,y_test) = tf.keras.datasets.fashion_mnist.load_data()
 
 ###scaling
@@ -97,9 +97,11 @@ with tab2:
                 st.write(st.session_state['model_history'].model.evaluate(x_train, y_train))
 
             if load_model.button('Load Model', use_container_width = True, disabled = False):
-                nn_model_loaded = tf.keras.models.load_model('/Users/abdulrahmannaser/Downloads/model_streamlit.h5', compile = False)
-                nn_model_loaded.compile(optimizer = 'adam', loss='sparse_categorical_crossentropy', metrics  = ['Accuracy'])
-                st.write(nn_model_loaded.evaluate(x_train, y_train))
+                #nn_model_loaded = tf.keras.models.load_model('/Users/abdulrahmannaser/Downloads/model_streamlit.h5', compile = False)
+                nn_model_loaded = st.file_uploader('Upload Model', ['keras, h5'])
+                if nn_model_loaded:
+                    nn_model_loaded.compile(optimizer = 'adam', loss='sparse_categorical_crossentropy', metrics  = ['Accuracy'])
+                    st.write(nn_model_loaded.evaluate(x_train, y_train))
             
             if reset.button('Reset', use_container_width = True):
                 st.session_state.clear()
@@ -280,51 +282,72 @@ with tab2:
         epochs = left_col.pills('Epochs', [5,10], selection_mode = "multi", default = [5,10])
         hidden_layers = left_col.pills('Hidden Layers', [3,4,5], selection_mode = "multi", default = [3,4,5])
         units_numbers = left_col.pills('Units', [32,64,128], selection_mode = "multi", default = [32,64,128])
-        l2s = left_col.pills('L2 regularization', [0, 0.0005, 0.5], selection_mode = "multi",default = [0,0.0005,0.5])
+        l2 = left_col.pills('L2 regularization', [0, 0.0005, 0.5], selection_mode = "multi",default = [0,0.0005,0.5])
         learning_rates = middle_col.pills('Learning rate', [0.001,0.0001], selection_mode = "multi", default  = [0.001,0.0001])
         optimizers = middle_col.pills('Optimizers', ['nesterov', 'rmsprop', 'adam', 'momentum', 'sgd'], selection_mode = "multi", default = ['nesterov', 'rmsprop', 'adam', 'momentum', 'sgd'])
         batch_sizes = middle_col.pills('Batch size', [16,32,64], selection_mode = "multi", default = [16,32,64])
         activation_functions = middle_col.pills('Activation', ['sigmoid', 'tanh', 'relu'], selection_mode = "multi", default = ['sigmoid', 'tanh', 'relu'])
+        l1 = [0]
+        droupout = [0]
+        batch_norm = False
 
         droupout_toggle = right_col.toggle('Droupout')
         batch_norm_toggle = right_col.toggle('Batch Normalization')
         l1_l2_toggle = right_col.toggle('L1 and L2')
 
-        optimizers_method = {
-            'nesterov' :  keras.optimizers.SGD(nesterov = True),
-            'rmsprop' : keras.optimizers.RMSprop,
-            'adam': keras.optimizers.Adam,
-            'momentum' : keras.optimizers.SGD(momentum = 0.1),
-            'sgd': keras.optimizers.SGD
-                          }
+        if droupout_toggle:
+            droupout = right_col.pills('Droupout', [0.1,0.2,0.3], selection_mode = "multi", default = [0.1,0.2,0.3])
+        if batch_norm_toggle:
+            batch_norm = [False, True]
+        if l1_l2_toggle:
+            l1 = right_col.pills('L1 regularization', [0, 0.0005,0.01,0.1, 0.5], selection_mode = "multi", default = [0, 0.0005,0.01,0.1, 0.5])
         
         hyper_parameters = {
-            'model__batch_size' : batch_sizes, 
+            'fit__batch_size' : batch_sizes, 
             'fit__epochs' : epochs, 
-            'optimizer' : optimizers,
+            'model__optimizer_type' : optimizers,
             'model__hidden_layer': hidden_layers,
             'model__activation': activation_functions,
             'optimizer__learning_rate': learning_rates,
             'model__units': units_numbers,
-            'model__kernel_regularizer': l2s
+            'model__l1': l2,
+            'model__l2': l1,
+            'model__drop_out_rate' : droupout,
+            'model__batch_norm' : batch_norm
             }
-        
-        def get_clf(hidden_layer, units, activation, **kwargs):
-            model = keras.Sequential()
+
+        def get_clf_with_batch(optimizer_type  ='adam',hidden_layer = 3, units  = 64,drop_out_rate = 0.1,l1 = 0, l2 = 0, batch_norm = False, activation  = 'relu', **kwargs):
+            model = tf.keras.Sequential()
             model.add(Flatten(input_shape = x_train[0].shape))
             for i in range(hidden_layer):
-                model.add(Dense(units = units, activation = activation))
+                model.add(Dense(units = units, activation = activation,kernel_regularizer= tf.keras.regularizers.l1_l2(l1=l1, l2=l2)))
+                if batch_norm:
+                    model.add(BatchNormalization())
+            model.add(Dropout(rate=drop_out_rate))
             model.add(Dense(units= 10, activation = 'softmax'))
 
+            if (optimizer_type == 'adam'):
+                model.compile(optimizer = optimizer_type, loss = 'sparse_categorical_crossentropy', metrics = ['accuracy'])
+            elif(optimizer_type == 'rmsprop'):
+                model.compile(optimizer = optimizer_type, loss = 'sparse_categorical_crossentropy', metrics = ['accuracy'])
+            elif(optimizer_type == 'sgd'):
+                model.compile(optimizer = 'sgd', loss = 'sparse_categorical_crossentropy', metrics = ['accuracy'])
+            elif(optimizer_type == 'nesterov'):
+                model.compile(optimizer = tf.keras.optimizers.SGD(nesterov=True, momentum=0.1), loss = 'sparse_categorical_crossentropy', metrics = ['accuracy'])
+            elif(optimizer_type == 'momentum_based'):
+                model.compile(optimizer = tf.keras.optimizers.SGD(momentum=0.1), loss = 'sparse_categorical_crossentropy', metrics = ['accuracy'])
+                
             return model
         
-        KerasClassifier(model = get_clf, loss = 'sparse_categorical_crossentropy')
+        model_hyper_tuning_batch = KerasClassifier(model = get_clf_with_batch, loss = 'sparse_categorical_crossentropy', optimizer = 'adam', metrics = 'accuracy', verbose = 1)
         
-        model_hyper_tuning = GridSearchCV(KerasClassifier(model = get_clf, loss = 'sparse_categorical_crossentropy'), hyper_parameters,cv = 2)
+        model_hyper_tuning = RandomizedSearchCV(model_hyper_tuning_batch, hyper_parameters, cv=2)
 
         if st.button('Start'):
             model_hyper_tuning.fit(x_train,y_train)
             st.session_state['model_hyper_tuning'] = model_hyper_tuning
 
             st.write(st.session_state['model_hyper_tuning'].best_score_)
+            st.write(st.session_state['model_hyper_tuning'].best_params_)
+
 
